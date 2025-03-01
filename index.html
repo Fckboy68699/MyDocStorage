@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyDocStorage</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Raleway', sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #222;
+            color: #f4f4f4;
+        }
+        .header {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+            background: #333;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .grid {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            background: #444;
+            border-left: 8px solid #FFD700;
+            position: relative;
+            transition: transform 0.3s ease-in-out, background 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .grid:hover {
+            transform: scale(1.02);
+            background: #555;
+        }
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .grid-header span {
+            font-size: 1.2em;
+            font-weight: bold;
+            outline: none;
+            cursor: text;
+        }
+        .delete-icon {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            color: #FF5733;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .delete-icon:hover {
+            color: #ff2e00;
+        }
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+        .file-item {
+            background: #666;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-bottom: 4px solid #FFA500;
+            transition: transform 0.3s, background 0.3s;
+            position: relative;
+        }
+        .file-item:hover {
+            transform: scale(1.05);
+            background: #777;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background 0.3s, transform 0.2s;
+            display: inline-block;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-create {
+            background-color: #007BFF;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .btn-download {
+            background-color: #28a745;
+            color: white;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn-preview {
+            background-color: #ffc107;
+            color: black;
+            margin-top: 5px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">MyDocStorage</div>
+    <div class="container">
+        <button class="btn btn-create" onclick="createGrid()">➕ Create New Grid</button>
+        <div id="grids"></div>
+    </div>
+    <script>
+        let gridCount = 0;
+        document.addEventListener("DOMContentLoaded", loadGrids);
+
+        function createGrid() {
+            gridCount++;
+            const grid = document.createElement('div');
+            grid.classList.add('grid');
+            grid.id = `grid-${gridCount}`;
+            grid.innerHTML = `
+                <div class="grid-header">
+                    <span contenteditable="true" onblur="saveGrids()">MyDocs</span>
+                    <button class="delete-icon" onclick="deleteGrid('${grid.id}')">❌</button>
+                </div>
+                <input type="file" onchange="uploadFile(event, '${grid.id}')">
+                <div class="file-list" id="files-${grid.id}"></div>
+            `;
+            document.getElementById('grids').appendChild(grid);
+            saveGrids();
+        }
+
+        function deleteGrid(gridId) {
+            document.getElementById(gridId).remove();
+            saveGrids();
+        }
+
+        function uploadFile(event, gridId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const fileList = document.getElementById(`files-${gridId}`);
+                    const fileItem = document.createElement('div');
+                    fileItem.classList.add('file-item');
+                    fileItem.innerHTML = `
+                        <span style="display: block; font-weight: bold;">${file.name}</span>
+                        <a class="btn btn-preview" href="${e.target.result}" target="_blank">👁 Preview</a>
+                        <a class="btn btn-download" href="${e.target.result}" download="${file.name}">⬇ Download</a>
+                        <button class="delete-icon" onclick="deleteFile(this, '${gridId}')">❌</button>
+                    `;
+                    fileList.appendChild(fileItem);
+                    saveGrids();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function deleteFile(button, gridId) {
+            button.parentElement.remove();
+            saveGrids();
+        }
+
+        function saveGrids() {
+            localStorage.setItem('grids', document.getElementById('grids').innerHTML);
+        }
+
+        function loadGrids() {
+            if (localStorage.getItem('grids')) {
+                document.getElementById('grids').innerHTML = localStorage.getItem('grids');
+                addDeleteListeners();
+            }
+        }
+
+        function addDeleteListeners() {
+            document.querySelectorAll(".delete-icon").forEach(button => {
+                button.onclick = function () {
+                    deleteFile(this);
+                };
+            });
+        }
+    </script>
+</body>
+</html>
